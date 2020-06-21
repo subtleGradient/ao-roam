@@ -22,8 +22,8 @@ export const q = (query, ...args) => roamAlphaAPI.q(query, ...args)
  */
 export const pull = (props, ...args) => roamAlphaAPI.pull(props, ...args)
 
-export const getStuffThatRefsToId = id =>
-  q("[:find ?e :in $ ?a :where [?e :block/refs ?a]]", id)
+export const getStuffThatRefsToId = uid =>
+  q("[:find ?e :in $ ?a :where [?e :block/refs ?a]]", uid)
 
 export const getIdForTitle = title =>
   q("[:find ?e :in $ ?a :where [?e :node/title ?a]]", title)[0][0]
@@ -47,3 +47,12 @@ export const getStuffThatRefsTo = title =>
 
 export const uidFromElement = (/**@type {Element} */ element) =>
   element.id.split("-").reverse()[0] //id="block-input-F6uIztpC2xbzqDVDuu32IJReoeW2-body-outline-alyAURK40-0unKRxaGp"
+
+const onInitTagName = "ao/js/roam/onInit"
+
+export const roam_onInit = () => {
+  for (const [uid] of getStuffThatRefsTo(onInitTagName)) {
+    const thingThatRefsInit = pull("[*]", uid)
+    console.log(thingThatRefsInit)
+  }
+}
