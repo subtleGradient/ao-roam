@@ -5,7 +5,7 @@ export const nao = Date.now()
 const { roamAlphaAPI } = window
 
 /** @typedef {{ ":db/id":number }} RoamDBRef */
-/** @typedef {{ ":block/refs":RoamDBRef[]; ":block/children":RoamDBRef[] }} RoamBlock */
+/** @typedef {RoamDBRef & { ":block/uid":string; ":block/refs":RoamDBRef[]; ":block/children":RoamDBRef[]; ":block/string":string; ":block/open":boolean; ":block/order":number }} RoamBlock */
 /** @typedef {RoamBlock & { ":node/title":string }} RoamNode */
 
 /**
@@ -22,11 +22,14 @@ export const q = (query, ...args) => roamAlphaAPI.q(query, ...args)
  */
 export const pull = (props, ...args) => roamAlphaAPI.pull(props, ...args)
 
-export const getStuffThatRefsToId = uid =>
-  q("[:find ?e :in $ ?a :where [?e :block/refs ?a]]", uid)
+export const getStuffThatRefsToId = id =>
+  q("[:find ?e :in $ ?a :where [?e :block/refs ?a]]", id)
 
 export const getIdForTitle = title =>
   q("[:find ?e :in $ ?a :where [?e :node/title ?a]]", title)[0][0]
+
+export const getParentId = id =>
+  q("[:find ?e :in $ ?a :where [?e :block/children ?a]]", id)[0][0]
 
 export const getCurrentPageUid = () =>
   window.location.hash.split("/").reverse()[0]
@@ -52,7 +55,30 @@ const onInitTagName = "ao/js/roam/onInit"
 
 export const roam_onInit = () => {
   for (const [uid] of getStuffThatRefsTo(onInitTagName)) {
-    const thingThatRefsInit = pull("[*]", uid)
-    console.log(thingThatRefsInit)
+    const {
+      ":block/children": [{ ":db/id": dbid }],
+    } = pull("[:block/children]", uid)
+
+    {
+      const { ":block/string": code, ":block/uid": uid } = pull(
+        "[:block/string :block/uid]",
+        dbid,
+      )
+      if (!code.startsWith(`\`\`\`javascript`)) continue
+
+      const [, js] = code.split(/[`]{3}(?:javascript\b)?/) || []
+      // eslint-disable-next-line no-new-func
+      const fn = new Function("uid", "dbid", js)
+      requestAnimationFrame(() => {
+        try {
+          fn(uid, dbid)
+        } catch (error) {
+          console.error("code block at", getUrlToUid(uid), `threw`, error)
+        }
+      })
+    }
   }
 }
+
+export const getUrlToUid = uid =>
+  window.location.toString().replace(getCurrentPageUid(), uid)
