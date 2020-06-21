@@ -1,2 +1,2 @@
-export lulz = Date.now()
+export const nao = Date.now()
 
