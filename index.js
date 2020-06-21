@@ -2,8 +2,6 @@ console.debug("executing ao-roam index")
 
 export const nao = Date.now()
 
-const { roamAlphaAPI } = window
-
 /** @typedef {{ ":db/id":number }} RoamDBRef */
 /** @typedef {RoamDBRef & { ":block/uid":string; ":block/refs":RoamDBRef[]; ":block/children":RoamDBRef[]; ":block/string":string; ":block/open":boolean; ":block/order":number }} RoamBlock */
 /** @typedef {RoamBlock & { ":node/title":string }} RoamNode */
@@ -13,14 +11,14 @@ const { roamAlphaAPI } = window
  * @param {Array<number|string>} args
  * @returns {[number][]}
  */
-export const q = (query, ...args) => roamAlphaAPI.q(query, ...args)
+export const q = (query, ...args) => window.roamAlphaAPI.q(query, ...args)
 
 /**
  * @param {string} query
  * @param {Array<number|string>} args
  * @returns {RoamNode}
  */
-export const pull = (props, ...args) => roamAlphaAPI.pull(props, ...args)
+export const pull = (props, ...args) => window.roamAlphaAPI.pull(props, ...args)
 
 export const getStuffThatRefsToId = id =>
   q("[:find ?e :in $ ?a :where [?e :block/refs ?a]]", id)
@@ -54,6 +52,10 @@ export const uidFromElement = (/**@type {Element} */ element) =>
 const onInitTagName = "ao/js/roam/onInit"
 
 export const roam_onInit = () => {
+  if (!window.roamAlphaAPI) {
+    setTimeout(roam_onInit, 100)
+    return
+  }
   for (const [uid] of getStuffThatRefsTo(onInitTagName)) {
     const {
       ":block/children": [{ ":db/id": dbid }],
