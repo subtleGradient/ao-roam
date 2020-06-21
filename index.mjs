@@ -1,2 +1,2 @@
-exportS lulz = Date.now()
+export lulz = Date.now()
 
