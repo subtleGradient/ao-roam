@@ -1,0 +1,2 @@
+export lulz = Date.now()
+
