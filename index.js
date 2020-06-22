@@ -7,14 +7,15 @@ export const nao = Date.now()
  * @param {Array<number|string>} args
  * @returns {[number][]}
  */
-export const q = (query, ...args) => window.roamAlphaAPI.q(query, ...args)
+export const q = (query, ...args) => window["roamAlphaAPI"].q(query, ...args)
 
 /**
- * @param {string} query
+ * @param {string} props
  * @param {Array<number|string>} args
  * @returns {?RoamNode}
  */
-export const pull = (props, ...args) => window.roamAlphaAPI.pull(props, ...args)
+export const pull = (props, ...args) =>
+  window["roamAlphaAPI"].pull(props, ...args)
 
 export const getStuffThatRefsToId = id =>
   q("[:find ?e :in $ ?a :where [?e :block/refs ?a]]", id)
@@ -93,7 +94,7 @@ const observer = new MutationObserver((mutationsList, observer) => {
 })
 
 export const roam_onInit = () => {
-  if (!window.roamAlphaAPI) {
+  if (!window["roamAlphaAPI"]) {
     setTimeout(roam_onInit, 100)
     return
   }

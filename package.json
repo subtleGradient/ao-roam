@@ -4,5 +4,10 @@
   "description": "",
   "keywords": [],
   "main": "/index.mjs",
-  "dependencies": {}
+  "dependencies": {},
+  "prettier":{
+    "semi": false,
+    "arrowParens": "avoid",
+    "trailingComma": "all"
+  }
 }
