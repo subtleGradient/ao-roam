@@ -2,10 +2,6 @@ console.debug("executing ao-roam index")
 
 export const nao = Date.now()
 
-/** @typedef {{ ":db/id":number }} RoamDBRef */
-/** @typedef {RoamDBRef & { ":block/uid":string; ":block/refs":RoamDBRef[]; ":block/children":RoamDBRef[]; ":block/string":string; ":block/open":boolean; ":block/order":number }} RoamBlock */
-/** @typedef {RoamBlock & { ":node/title":string }} RoamNode */
-
 /**
  * @param {string} query
  * @param {Array<number|string>} args
@@ -16,7 +12,7 @@ export const q = (query, ...args) => window.roamAlphaAPI.q(query, ...args)
 /**
  * @param {string} query
  * @param {Array<number|string>} args
- * @returns {null | RoamNode}
+ * @returns {?RoamNode}
  */
 export const pull = (props, ...args) => window.roamAlphaAPI.pull(props, ...args)
 
@@ -50,36 +46,65 @@ export const uidFromElement = (/**@type {Element} */ element) =>
 export const getUrlToUid = uid =>
   window.location.toString().replace(getCurrentPageUid(), uid)
 
-const onInitTagName = "ao/js/roam/onInit"
+export const forEachThingThatRefsTo = (tagName, fn) => {
+  for (const [uid] of getStuffThatRefsTo(tagName)) {
+    const block = pull("[:block/children]", uid)
+    if (!block) continue
+    const { ":block/children": children = [] } = block
+    const [{ ":db/id": dbid }] = children
+    if (!dbid) continue
+    fn(dbid)
+  }
+}
+
+export const executeEverythingThatRefsTo = tagName => {
+  forEachThingThatRefsTo(tagName, executeBlockById)
+}
+
+export const executeBlockById = dbid => {
+  const { ":block/string": code, ":block/uid": uid } = pull(
+    "[:block/string :block/uid]",
+    dbid,
+  )
+  if (!code.includes(`\`\`\`javascript`)) return
+
+  const [, js] = code.split(/[`]{3}(?:javascript\b)?/) || []
+  // eslint-disable-next-line no-new-func
+  const fn = Function("uid", "dbid", js)
+  requestAnimationFrame(() => {
+    try {
+      fn(uid, dbid)
+    } catch (error) {
+      console.error("code block at", getUrlToUid(uid), `threw`, error)
+    }
+  })
+}
+
+const observer = new MutationObserver((mutationsList, observer) => {
+  for (const mutation of mutationsList) {
+    if (mutation.type === "childList") {
+      // console.log("A child node has been added or removed.")
+      // mutation.addedNodes[0]
+      // mutation.removedNodes
+      // } else if (mutation.type === "attributes") {
+      // console.log("The " + mutation.attributeName + " attribute was modified.")
+    }
+  }
+})
 
 export const roam_onInit = () => {
   if (!window.roamAlphaAPI) {
     setTimeout(roam_onInit, 100)
     return
   }
-  for (const [uid] of getStuffThatRefsTo(onInitTagName)) {
-    const block = pull("[:block/children]", uid)
-    if (!block) continue
-    const { ":block/children": children = [] } = block
-    const [{ ":db/id": dbid }] = children
-    if (!dbid) continue
-    {
-      const { ":block/string": code, ":block/uid": uid } = pull(
-        "[:block/string :block/uid]",
-        dbid,
-      )
-      if (!code.includes(`\`\`\`javascript`)) continue
+  executeEverythingThatRefsTo("ao/js/roam/onInit")
 
-      const [, js] = code.split(/[`]{3}(?:javascript\b)?/) || []
-      // eslint-disable-next-line no-new-func
-      const fn = Function("uid", "dbid", js)
-      requestAnimationFrame(() => {
-        try {
-          fn(uid, dbid)
-        } catch (error) {
-          console.error("code block at", getUrlToUid(uid), `threw`, error)
-        }
-      })
-    }
-  }
+  // observer.observe(document.documentElement, {
+  //   attributes: true,
+  //   childList: true,
+  //   subtree: true
+  // });
+
+  // Later, you can stop observing
+  // observer.disconnect();
 }
