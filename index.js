@@ -4,31 +4,48 @@ export const nao = Date.now()
 
 /**
  * @param {string} query
+ * @param {?(number|string)} arg1
  * @param {(number|string)[]} args
  * @returns {[number][]}
  */
-export const q = (query, ...args) =>
-  (window.roamAlphaAPI && window.roamAlphaAPI.q(query, ...args)) || []
+export const q = (query, arg1, ...args) =>
+  arg1 == null
+    ? []
+    : (window.roamAlphaAPI && window.roamAlphaAPI.q(query, arg1, ...args)) || []
+
+/**
+ * @param {string} query
+ * @param {?(number|string)} arg1
+ * @param {(number|string)[]} args
+ * @returns {?number}
+ */
+export const q1 = (query, arg1, ...args) => {
+  const result1 = q(query, arg1, ...args)[0]
+  if (!Array.isArray(result1)) return null
+  return result1[0]
+}
 
 /**
  * @param {string} props
- * @param {number} dbid
+ * @param {?number} dbid
  * @returns {import('./RoamTypes').RoamNode | import('./RoamTypes').RoamBlock | null | undefined}
  */
 export const pull = (props, dbid) =>
-  window.roamAlphaAPI && window.roamAlphaAPI.pull(props, dbid)
+  dbid == null
+    ? null
+    : window.roamAlphaAPI && window.roamAlphaAPI.pull(props, dbid)
 
-export const getStuffThatRefsToId = (/**@type {number} */ dbid) =>
+export const getStuffThatRefsToId = (/**@type {?number} */ dbid) =>
   q("[:find ?e :in $ ?a :where [?e :block/refs ?a]]", dbid)
 
-export const getIdForTitle = (/**@type {string} */ title) =>
-  q("[:find ?e :in $ ?a :where [?e :node/title ?a]]", title)[0][0]
+export const getIdForTitle = (/**@type {?string} */ title) =>
+  q1("[:find ?e :in $ ?a :where [?e :node/title ?a]]", title)
 
-export const getParentId = (/**@type {number} */ dbid) =>
-  q("[:find ?e :in $ ?a :where [?e :block/children ?a]]", dbid)[0][0]
+export const getParentId = (/**@type {?number} */ dbid) =>
+  q1("[:find ?e :in $ ?a :where [?e :block/children ?a]]", dbid)
 
-export const getIdFromUid = (/**@type {string} */ uid) =>
-  q("[:find ?e :in $ ?a :where [?e :block/uid ?a]]", uid)[0][0]
+export const getIdFromUid = (/**@type {?string} */ uid) =>
+  q1("[:find ?e :in $ ?a :where [?e :block/uid ?a]]", uid)
 
 export const getCurrentPageUid = () =>
   window.location.hash.split("/").reverse()[0]
@@ -90,7 +107,8 @@ const observer = new MutationObserver((mutationsList, observer) => {
             /**@type {Element}*/ (/**@type {any}*/ node),
           )
           if (!uid) return
-          console.log("mounted block", { ":block/uid": uid })
+          const block = pull("[*]", getIdFromUid(uid))
+          console.log("mounted block", block)
         }
       })
 
