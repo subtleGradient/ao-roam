@@ -1,8 +1,8 @@
-interface RoamDBRef {
+export interface RoamDBRef {
   ":db/id": number
 }
 
-interface RoamBlock extends RoamDBRef {
+export interface RoamBlock extends RoamDBRef {
   ":block/uid": string
   ":block/refs"?: RoamDBRef[]
   ":block/children"?: RoamDBRef[]
@@ -11,6 +11,6 @@ interface RoamBlock extends RoamDBRef {
   ":block/order": number
 }
 
-interface RoamNode extends RoamBlock {
+export interface RoamNode extends RoamBlock {
   ":node/title": string
 }

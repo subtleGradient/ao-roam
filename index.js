@@ -9,6 +9,8 @@ export const nao = Date.now()
  */
 export const q = (query, ...args) => window["roamAlphaAPI"].q(query, ...args)
 
+/** @typedef { import('./RoamTypes').RoamNode } RoamNode */
+
 /**
  * @param {string} props
  * @param {Array<number|string>} args
