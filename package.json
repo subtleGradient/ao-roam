@@ -4,8 +4,10 @@
   "description": "",
   "keywords": [],
   "main": "/index.mjs",
-  "dependencies": {},
-  "prettier":{
+  "dependencies": {
+    "serve": "^11.3.2"
+  },
+  "prettier": {
     "semi": false,
     "arrowParens": "avoid",
     "trailingComma": "all"
