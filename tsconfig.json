@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "lib": ["DOM", "ES2020"],
     "allowJs": true,
     "strict": true,
     "checkJs": true,

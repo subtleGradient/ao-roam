@@ -1,3 +1,12 @@
+declare global {
+  interface Window {
+    roamAlphaAPI?: {
+      q: (query: string, ...args: (string | number)[]) => [number][]
+      pull: (keys: string, dbid: number) => null | RoamBlock | RoamNode
+    }
+  }
+}
+
 export interface RoamDBRef {
   ":db/id": number
 }

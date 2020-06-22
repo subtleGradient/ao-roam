@@ -4,28 +4,27 @@ export const nao = Date.now()
 
 /**
  * @param {string} query
- * @param {Array<number|string>} args
+ * @param {(number|string)[]} args
  * @returns {[number][]}
  */
-export const q = (query, ...args) => window["roamAlphaAPI"].q(query, ...args)
-
-/** @typedef { import('./RoamTypes').RoamNode } RoamNode */
+export const q = (query, ...args) =>
+  (window.roamAlphaAPI && window.roamAlphaAPI.q(query, ...args)) || []
 
 /**
  * @param {string} props
- * @param {Array<number|string>} args
- * @returns {?RoamNode}
+ * @param {number} dbid
+ * @returns {import('./RoamTypes').RoamNode | import('./RoamTypes').RoamBlock | null | undefined}
  */
-export const pull = (props, ...args) =>
-  window["roamAlphaAPI"].pull(props, ...args)
+export const pull = (props, dbid) =>
+  window.roamAlphaAPI && window.roamAlphaAPI.pull(props, dbid)
 
-export const getStuffThatRefsToId = dbid =>
+export const getStuffThatRefsToId = (/**@type {number} */ dbid) =>
   q("[:find ?e :in $ ?a :where [?e :block/refs ?a]]", dbid)
 
-export const getIdForTitle = title =>
+export const getIdForTitle = (/**@type {string} */ title) =>
   q("[:find ?e :in $ ?a :where [?e :node/title ?a]]", title)[0][0]
 
-export const getParentId = dbid =>
+export const getParentId = (/**@type {number} */ dbid) =>
   q("[:find ?e :in $ ?a :where [?e :block/children ?a]]", dbid)[0][0]
 
 export const getCurrentPageUid = () =>
@@ -40,16 +39,19 @@ export const getCurrentPage = () =>
     )[0][0],
   )
 
-export const getStuffThatRefsTo = title =>
+export const getStuffThatRefsTo = (/**@type {string} */ title) =>
   getStuffThatRefsToId(getIdForTitle(title))
 
 export const uidFromElement = (/**@type {Element} */ element) =>
   element.id.split("-").reverse()[0] //id="block-input-F6uIztpC2xbzqDVDuu32IJReoeW2-body-outline-alyAURK40-0unKRxaGp"
 
-export const getUrlToUid = uid =>
+export const getUrlToUid = (/**@type {string} */ uid) =>
   window.location.toString().replace(getCurrentPageUid(), uid)
 
-export const forEachThingThatRefsTo = (tagName, fn) => {
+export const forEachThingThatRefsTo = (
+  /**@type {string} */ tagName,
+  /**@type {(dbid:number)=>void} */ fn,
+) => {
   for (const [uid] of getStuffThatRefsTo(tagName)) {
     const block = pull("[:block/children]", uid)
     if (!block) continue
@@ -60,15 +62,14 @@ export const forEachThingThatRefsTo = (tagName, fn) => {
   }
 }
 
-export const executeEverythingThatRefsTo = tagName => {
+export const executeEverythingThatRefsTo = (/**@type {string} */ tagName) => {
   forEachThingThatRefsTo(tagName, executeBlockById)
 }
 
-export const executeBlockById = dbid => {
-  const { ":block/string": code, ":block/uid": uid } = pull(
-    "[:block/string :block/uid]",
-    dbid,
-  )
+export const executeBlockById = (/**@type {number} */ dbid) => {
+  const block = pull("[:block/string :block/uid]", dbid)
+  if (!block) return
+  const { ":block/string": code, ":block/uid": uid } = block
   if (!code.includes(`\`\`\`javascript`)) return
 
   const [, js] = code.split(/[`]{3}(?:javascript\b)?/) || []
@@ -96,7 +97,7 @@ const observer = new MutationObserver((mutationsList, observer) => {
 })
 
 export const roam_onInit = () => {
-  if (!window["roamAlphaAPI"]) {
+  if (!window.roamAlphaAPI) {
     setTimeout(roam_onInit, 100)
     return
   }
