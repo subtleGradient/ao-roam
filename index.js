@@ -19,14 +19,14 @@ export const q = (query, ...args) => window["roamAlphaAPI"].q(query, ...args)
 export const pull = (props, ...args) =>
   window["roamAlphaAPI"].pull(props, ...args)
 
-export const getStuffThatRefsToId = id =>
-  q("[:find ?e :in $ ?a :where [?e :block/refs ?a]]", id)
+export const getStuffThatRefsToId = dbid =>
+  q("[:find ?e :in $ ?a :where [?e :block/refs ?a]]", dbid)
 
 export const getIdForTitle = title =>
   q("[:find ?e :in $ ?a :where [?e :node/title ?a]]", title)[0][0]
 
-export const getParentId = id =>
-  q("[:find ?e :in $ ?a :where [?e :block/children ?a]]", id)[0][0]
+export const getParentId = dbid =>
+  q("[:find ?e :in $ ?a :where [?e :block/children ?a]]", dbid)[0][0]
 
 export const getCurrentPageUid = () =>
   window.location.hash.split("/").reverse()[0]
