@@ -16,7 +16,7 @@ export const q = (query, ...args) => window.roamAlphaAPI.q(query, ...args)
 /**
  * @param {string} query
  * @param {Array<number|string>} args
- * @returns {RoamNode}
+ * @returns {null | RoamNode}
  */
 export const pull = (props, ...args) => window.roamAlphaAPI.pull(props, ...args)
 
@@ -58,7 +58,9 @@ export const roam_onInit = () => {
     return
   }
   for (const [uid] of getStuffThatRefsTo(onInitTagName)) {
-    const { ":block/children": children = [] } = pull("[:block/children]", uid)
+    const block = pull("[:block/children]", uid)
+    if (!block) continue
+    const { ":block/children": children = [] } = block
     const [{ ":db/id": dbid }] = children
     if (!dbid) continue
     {
