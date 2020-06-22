@@ -13,13 +13,26 @@ export interface RoamDBRef {
 
 export interface RoamBlock extends RoamDBRef {
   ":block/uid": string
-  ":block/refs"?: RoamDBRef[]
-  ":block/children"?: RoamDBRef[]
-  ":block/string": string
-  ":block/open": boolean
   ":block/order": number
+  ":block/string": string
+
+  ":block/refs"?: RoamDBRef[]
+
+  ":block/open": boolean
+  ":block/children"?: RoamDBRef[]
+
+  ":create/email": string
+  ":create/time": number
+  ":edit/email": string
+  ":edit/time": number
 }
 
 export interface RoamNode extends RoamBlock {
   ":node/title": string
+  ":attrs/lookup"?: RoamDBRef[]
+  ":entity/attrs"?: {
+    ":source": [":block/uid", string]
+    ":value": [":block/uid", string]
+  }[]
+  ":page/permissions"?: { ":public": null | any }
 }
