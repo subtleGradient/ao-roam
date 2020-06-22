@@ -85,10 +85,9 @@ export const executeBlockById = (/**@type {number} */ dbid) => {
 
   const [, js] = code.split(/[`]{3}(?:javascript\b)?/) || []
   // eslint-disable-next-line no-new-func
-  const fn = Function("uid", "dbid", js)
   requestAnimationFrame(() => {
     try {
-      fn(uid, dbid)
+      Function("uid", "dbid", js)(uid, dbid)
     } catch (error) {
       console.error("code block at", getUrlToUid(uid), `threw`, error)
     }
