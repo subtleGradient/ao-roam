@@ -44,10 +44,11 @@ export const getCurrentPage = () =>
 export const getStuffThatRefsTo = title =>
   getStuffThatRefsToId(getIdForTitle(title))
 
-// console.log(getIdForTitle("ao/js/roam/onInit"))
-
 export const uidFromElement = (/**@type {Element} */ element) =>
   element.id.split("-").reverse()[0] //id="block-input-F6uIztpC2xbzqDVDuu32IJReoeW2-body-outline-alyAURK40-0unKRxaGp"
+
+export const getUrlToUid = uid =>
+  window.location.toString().replace(getCurrentPageUid(), uid)
 
 const onInitTagName = "ao/js/roam/onInit"
 
@@ -57,20 +58,19 @@ export const roam_onInit = () => {
     return
   }
   for (const [uid] of getStuffThatRefsTo(onInitTagName)) {
-    const {
-      ":block/children": [{ ":db/id": dbid }],
-    } = pull("[:block/children]", uid)
-
+    const { ":block/children": children = [] } = pull("[:block/children]", uid)
+    const [{ ":db/id": dbid }] = children
+    if (!dbid) continue
     {
       const { ":block/string": code, ":block/uid": uid } = pull(
         "[:block/string :block/uid]",
         dbid,
       )
-      if (!code.startsWith(`\`\`\`javascript`)) continue
+      if (!code.includes(`\`\`\`javascript`)) continue
 
       const [, js] = code.split(/[`]{3}(?:javascript\b)?/) || []
       // eslint-disable-next-line no-new-func
-      const fn = new Function("uid", "dbid", js)
+      const fn = Function("uid", "dbid", js)
       requestAnimationFrame(() => {
         try {
           fn(uid, dbid)
@@ -81,6 +81,3 @@ export const roam_onInit = () => {
     }
   }
 }
-
-export const getUrlToUid = uid =>
-  window.location.toString().replace(getCurrentPageUid(), uid)
