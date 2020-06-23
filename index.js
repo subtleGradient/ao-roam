@@ -128,10 +128,14 @@ const observer = new MutationObserver((mutationsList, observer) => {
         if (node.nodeType !== Node.ELEMENT_NODE) return
         const el = /**@type {Element}*/ (/**@type {any}*/ node)
         const uid = uidFromElement(el)
-        const attrs = get(uid, ":block/refs")?.[":block/refs"]?.map(attr =>
-          getAttrs(attr),
-        )
-        console.log("with attrs", attrs)
+        const attrs = get(uid, ":block/refs")?.[":block/refs"]?.map(ref => {
+          console.log(
+            "mutated block refers to",
+            get(ref, ":node/title", ":entity/attrs"),
+          )
+          return getAttrs(ref, ":node/title", ":block/string", ":edit/time")
+        })
+        attrs && console.log("with attrs", attrs)
       })
 
       // mutation.removedNodes
@@ -174,7 +178,7 @@ const getAttrs = (id, ...props) => {
     [page, attr, value],
   ) => {
     const key =
-      get(attr[":value"][1], ":node/title", ":block/string")?.[":node/title"] ||
+      get(attr[":value"][1], ":node/title")?.[":node/title"] ||
       "key"
 
     const val =
@@ -182,7 +186,8 @@ const getAttrs = (id, ...props) => {
         ? value[":value"]
         : get(value[":value"][1], ...props)
 
-    acc[key] = val
+    if (key in acc) acc[key] = [acc[key], val].flat()
+    else acc[key] = val
     return acc
   }, {})
 }
