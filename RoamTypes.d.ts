@@ -2,7 +2,7 @@ declare global {
   interface Window {
     roamAlphaAPI?: {
       q: (query: string, ...args: (string | number)[]) => [number][]
-      pull: (keys: string, dbid: number) => null | RoamBlock | RoamNode
+      pull: (keys: string, dbid: number) => RoamNode | null
     }
   }
 }
@@ -27,12 +27,28 @@ export interface RoamBlock extends RoamDBRef {
   ":edit/time": number
 }
 
+type RoamAttrItem = [":block/uid", string]
+
+type RoamAttr = {
+  ":source": RoamAttrItem
+  ":value": RoamAttrItem | string
+}
+
 export interface RoamNode extends RoamBlock {
   ":node/title": string
   ":attrs/lookup"?: RoamDBRef[]
-  ":entity/attrs"?: {
-    ":source": [":block/uid", string]
-    ":value": [":block/uid", string]
-  }[]
+  ":entity/attrs"?: [
+    RoamAttr,
+    RoamAttr,
+    RoamAttr,
+  ][]
   ":page/permissions"?: { ":public": null | any }
 }
+
+export type RoamId =
+  | number
+  | string
+  | {
+      ":block/uid"?: string
+      ":db/id"?: number
+    }
