@@ -4,7 +4,7 @@ const nao = Date.now()
 
 /**
  * @param {string} query
- * @param {?(number|string)} arg1
+ * @param {number|string|null|undefined} arg1
  * @param {(number|string)[]} args
  * @returns {[number][]}
  */
@@ -61,7 +61,7 @@ export const get = (id, ...props) => {
   return PULL_DEPRECATED(propString, dbid)
 }
 
-get.defaultProps = ":block/uid :db/id :node/title"
+get.defaultProps = ":block/uid :db/id"
 
 const getStuffThatRefsToId = (/**@type {?number} */ dbid) =>
   q("[:find ?e :in $ ?a :where [?e :block/refs ?a]]", dbid)
@@ -131,46 +131,55 @@ const executeBlock = (id, extraArgs = {}) => {
   })
 }
 
-const uidFromElement = (/**@type {Element} */ element) =>
-  element.id.split("-").reverse()[0] //id="block-input-F6uIztpC2xbzqDVDuu32IJReoeW2-body-outline-alyAURK40-0unKRxaGp"
+// -body-outline-
+// -mentions-page-
+
+const uidFromElement = (/**@type {Element} */ element) => {
+  const [, currentPageUID] = element.baseURI.split("/page/")
+  // TODO: add support for [[embed]] e.g. block-input-uuid11c136f1-a9b5-4ff4-9760-13fcdd0189a3-TXupdk-W_
+  const [, blockUID] = element.id.split(`${currentPageUID}-`)
+  return blockUID
+}
+
+/**
+ * @param {Node} node
+ * @param {MutationRecord} mutation
+ */
+const handleNode = (node, mutation) => {
+  if (node.nodeType !== Node.ELEMENT_NODE) return
+  const el = /**@type {Element}*/ (/**@type {any}*/ node)
+  const uid = uidFromElement(el)
+  const block = get(uid, ":block/refs", ":block/string")
+  block?.[":block/refs"]?.forEach(ref => {
+    const attrs = getAttrs(ref, ":node/title", ":block/string", ":edit/time")
+    if (!attrs) return
+    const tag = get(ref, ":node/title", ":entity/attrs")
+
+    console.group("Mutation for block", uid)
+    console.log("Element added", el)
+    console.log("block refs page", tag)
+    console.log("whose attributes are", attrs)
+
+    /**@type {import('./RoamTypes').RoamNode}*/
+    const mutationHandlerCode = attrs["vivify/onMutation"]
+    mutationHandlerCode &&
+      executeBlock(mutationHandlerCode[":db/id"], {
+        mutation,
+        node,
+        block,
+        page: tag,
+        attrs,
+      })
+
+    console.groupEnd()
+  })
+}
 
 const observer = new MutationObserver((mutationsList, observer) => {
   for (const mutation of mutationsList) {
     if (mutation.type === "childList") {
-      mutation.addedNodes.forEach(node => {
-        if (node.nodeType !== Node.ELEMENT_NODE) return
-        const el = /**@type {Element}*/ (/**@type {any}*/ node)
-        const uid = uidFromElement(el)
-        const block = get(uid, ":block/refs", ":block/string")
-        block?.[":block/refs"]?.forEach(ref => {
-          const attrs = getAttrs(
-            ref,
-            ":node/title",
-            ":block/string",
-            ":edit/time",
-          )
-          if (!attrs) return
-          const tag = get(ref, ":node/title", ":entity/attrs")
-
-          console.group("Mutation for block", uid)
-          console.log("Element added", el)
-          console.log("block refs page", tag)
-          console.log("whose attributes are", attrs)
-
-          /**@type {import('./RoamTypes').RoamNode}*/
-          const mutationHandlerCode = attrs["vivify/onMutation"]
-          mutationHandlerCode &&
-            executeBlock(mutationHandlerCode[":db/id"], {
-              mutation,
-              node,
-              block,
-              page: tag,
-              attrs,
-            })
-
-          console.groupEnd()
-        })
-      })
+      mutation.addedNodes.forEach(node => handleNode(node, mutation))
+      mutation.removedNodes.forEach(node => handleNode(node, mutation))
 
       // mutation.removedNodes
       // } else if (mutation.type === "attributes") {
@@ -202,6 +211,9 @@ const vivify = {
   roam_onInit,
 }
 
+// @ts-ignore
+window["vivify"] = vivify
+
 /**
  * @param {string | number | { ":block/uid"?: string; ":db/id"?: number; } | null | undefined} id
  * @param { (keyof import('./RoamTypes').RoamNode)[] } props
@@ -212,7 +224,6 @@ const getAttrs = (id, ...props) => {
     [page, attr, value],
   ) => {
     const key = get(attr[":value"][1], ":node/title")?.[":node/title"] || "key"
-
     const val =
       typeof value[":value"] === "string"
         ? value[":value"]
@@ -223,3 +234,14 @@ const getAttrs = (id, ...props) => {
     return acc
   }, undefined)
 }
+
+/**
+ * @param {TemplateStringsArray} template
+ * @param {any[]} vals
+ */
+const esm = (template, ...vals) =>
+  URL.createObjectURL(
+    new Blob([String.raw(template, ...vals)], { type: "text/javascript" }),
+  )
+
+// esm`export const lulz = true`
