@@ -98,22 +98,35 @@ const forFirstChildOfEachThingThatRefsTo = (
 }
 
 const executeEverythingThatRefsTo = (/**@type {string} */ tagName) => {
-  forFirstChildOfEachThingThatRefsTo(tagName, executeBlockById)
+  forFirstChildOfEachThingThatRefsTo(tagName, id =>
+    executeBlock(id, {
+      trigger: tagName,
+    }),
+  )
 }
 
-const executeBlockById = (/**@type {number} */ dbid) => {
-  const block = get(dbid, ":block/string", ":block/uid")
-  if (!block) return
-  const { ":block/string": code, ":block/uid": uid } = block
+/**
+ * @param {string | number | { ":block/uid"?: string; ":db/id"?: number; } | null | undefined} id
+ * @param {{[key:string]:any}} extraArgs
+ */
+const executeBlock = (id, extraArgs = {}) => {
+  const codeBlock = get(id, ":block/string", ":block/uid")
+  if (!codeBlock) return
+  const { ":block/string": code, ":block/uid": uid } = codeBlock
   if (!code.includes(`\`\`\`javascript`)) return
-
   const [, js] = code.split(/[`]{3}(?:javascript\b)?/) || []
-  // eslint-disable-next-line no-new-func
+
+  const args = { ...extraArgs, codeBlock }
+  const argKeys = Object.keys(args)
+  const argVals = Object.values(args)
+
   requestAnimationFrame(() => {
     try {
-      Function("vivify", "uid", "dbid", js)(vivify, uid, dbid)
+      // eslint-disable-next-line no-new-func
+      Function("vivify", "args", ...argKeys, js)(vivify, args, ...argVals)
     } catch (error) {
       console.error("code block at", getUrlToUid(uid), `threw`, error)
+      if (error instanceof SyntaxError) console.debug(js)
     }
   })
 }
@@ -128,14 +141,35 @@ const observer = new MutationObserver((mutationsList, observer) => {
         if (node.nodeType !== Node.ELEMENT_NODE) return
         const el = /**@type {Element}*/ (/**@type {any}*/ node)
         const uid = uidFromElement(el)
-        const attrs = get(uid, ":block/refs")?.[":block/refs"]?.map(ref => {
-          console.log(
-            "mutated block refers to",
-            get(ref, ":node/title", ":entity/attrs"),
+        const block = get(uid, ":block/refs", ":block/string")
+        block?.[":block/refs"]?.forEach(ref => {
+          const attrs = getAttrs(
+            ref,
+            ":node/title",
+            ":block/string",
+            ":edit/time",
           )
-          return getAttrs(ref, ":node/title", ":block/string", ":edit/time")
+          if (!attrs) return
+          const tag = get(ref, ":node/title", ":entity/attrs")
+
+          console.group("Mutation for block", uid)
+          console.log("Element added", el)
+          console.log("block refs page", tag)
+          console.log("whose attributes are", attrs)
+
+          /**@type {import('./RoamTypes').RoamNode}*/
+          const mutationHandlerCode = attrs["vivify/onMutation"]
+          mutationHandlerCode &&
+            executeBlock(mutationHandlerCode[":db/id"], {
+              mutation,
+              node,
+              block,
+              page: tag,
+              attrs,
+            })
+
+          console.groupEnd()
         })
-        attrs && console.log("with attrs", attrs)
       })
 
       // mutation.removedNodes
@@ -174,12 +208,10 @@ const vivify = {
  */
 const getAttrs = (id, ...props) => {
   return get(id, ":entity/attrs")?.[":entity/attrs"]?.reduce((
-    /**@type {any}*/ acc,
+    /**@type {any}*/ acc = {},
     [page, attr, value],
   ) => {
-    const key =
-      get(attr[":value"][1], ":node/title")?.[":node/title"] ||
-      "key"
+    const key = get(attr[":value"][1], ":node/title")?.[":node/title"] || "key"
 
     const val =
       typeof value[":value"] === "string"
@@ -189,5 +221,5 @@ const getAttrs = (id, ...props) => {
     if (key in acc) acc[key] = [acc[key], val].flat()
     else acc[key] = val
     return acc
-  }, {})
+  }, undefined)
 }
