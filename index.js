@@ -133,19 +133,19 @@ const executeBlock = (id, extraArgs = {}) => {
 
 // -body-outline-
 // -mentions-page-
-
 const uidFromElement = (/**@type {Element} */ element) => {
-  const [, currentPageUID] = element.baseURI.split("/page/")
+  // const [, currentPageUID] = element.baseURI.split("/page/")
+  // const [, blockUID] = element.id.split(`${currentPageUID}-`)
   // TODO: add support for [[embed]] e.g. block-input-uuid11c136f1-a9b5-4ff4-9760-13fcdd0189a3-TXupdk-W_
-  const [, blockUID] = element.id.split(`${currentPageUID}-`)
-  return blockUID
+  return element.id.match(/-([a-zA-Z0-9_-]{9}|\d{2}-\d{2}-\d{4})$/)?.[1]
 }
 
 /**
  * @param {Node} node
  * @param {MutationRecord} mutation
+ * @param {'added'|'removed'} action
  */
-const handleNode = (node, mutation) => {
+const handleNode = (action, node, mutation) => {
   if (node.nodeType !== Node.ELEMENT_NODE) return
   const el = /**@type {Element}*/ (/**@type {any}*/ node)
   const uid = uidFromElement(el)
@@ -155,7 +155,7 @@ const handleNode = (node, mutation) => {
     if (!attrs) return
     const tag = get(ref, ":node/title", ":entity/attrs")
 
-    console.group("Mutation for block", uid)
+    console.groupCollapsed("Mutation for block", uid)
     console.log("Element added", el)
     console.log("block refs page", tag)
     console.log("whose attributes are", attrs)
@@ -164,6 +164,7 @@ const handleNode = (node, mutation) => {
     const mutationHandlerCode = attrs["vivify/onMutation"]
     mutationHandlerCode &&
       executeBlock(mutationHandlerCode[":db/id"], {
+        action,
         mutation,
         node,
         block,
@@ -178,8 +179,10 @@ const handleNode = (node, mutation) => {
 const observer = new MutationObserver((mutationsList, observer) => {
   for (const mutation of mutationsList) {
     if (mutation.type === "childList") {
-      mutation.addedNodes.forEach(node => handleNode(node, mutation))
-      mutation.removedNodes.forEach(node => handleNode(node, mutation))
+      mutation.addedNodes.forEach(node => handleNode("added", node, mutation))
+      mutation.removedNodes.forEach(node =>
+        handleNode("removed", node, mutation),
+      )
 
       // mutation.removedNodes
       // } else if (mutation.type === "attributes") {
