@@ -8,7 +8,7 @@ const nao = Date.now()
  * @param {(number|string)[]} args
  * @returns {[number][]}
  */
-const q = (query, arg1, ...args) =>
+export const q = (query, arg1, ...args) =>
   arg1 == null
     ? []
     : (window.roamAlphaAPI && window.roamAlphaAPI.q(query, arg1, ...args)) || []
@@ -40,7 +40,7 @@ const PULL_DEPRECATED = (props, dbid) =>
  * @param { null | undefined | import('./RoamTypes').RoamId } id
  * @param { (keyof import('./RoamTypes').RoamNode)[] } props
  */
-const get = (id, ...props) => {
+export const get = (id, ...props) => {
   if (id == null) return null
   let uid, dbid
   switch (typeof id) {
@@ -56,8 +56,12 @@ const get = (id, ...props) => {
   }
   if (dbid == null && uid != null) dbid = getIdFromUid(uid)
   if (dbid == null) return null
-  return PULL_DEPRECATED(`[${props.join(" ") || "*"}]`, dbid)
+  const propString =
+    props.length === 0 ? "[*]" : `[${props.join(" ")} ${get.defaultProps}]`
+  return PULL_DEPRECATED(propString, dbid)
 }
+
+get.defaultProps = ":block/uid :db/id :node/title"
 
 const getStuffThatRefsToId = (/**@type {?number} */ dbid) =>
   q("[:find ?e :in $ ?a :where [?e :block/refs ?a]]", dbid)
@@ -81,22 +85,20 @@ const getStuffThatRefsTo = (/**@type {string} */ title) =>
 const getUrlToUid = (/**@type {string} */ uid) =>
   window.location.toString().replace(getCurrentPageUid(), uid)
 
-const forEachThingThatRefsTo = (
+const forFirstChildOfEachThingThatRefsTo = (
   /**@type {string} */ tagName,
   /**@type {(dbid:number)=>void} */ fn,
 ) => {
   for (const [uid] of getStuffThatRefsTo(tagName)) {
-    const block = get(uid, ":block/children")
-    if (!block) continue
-    const { ":block/children": children = [] } = block
-    const [{ ":db/id": dbid }] = children
-    if (!dbid) continue
-    fn(dbid)
+    const firstChildId = get(uid, ":block/children")?.[":block/children"]?.[0][
+      ":db/id"
+    ]
+    firstChildId && fn(firstChildId)
   }
 }
 
 const executeEverythingThatRefsTo = (/**@type {string} */ tagName) => {
-  forEachThingThatRefsTo(tagName, executeBlockById)
+  forFirstChildOfEachThingThatRefsTo(tagName, executeBlockById)
 }
 
 const executeBlockById = (/**@type {number} */ dbid) => {
@@ -126,36 +128,10 @@ const observer = new MutationObserver((mutationsList, observer) => {
         if (node.nodeType !== Node.ELEMENT_NODE) return
         const el = /**@type {Element}*/ (/**@type {any}*/ node)
         const uid = uidFromElement(el)
-        get(uid)
-          ?.[":block/refs"]?.map(ref => get(ref))
-          .forEach(refKid => {
-            console.log("mounted block refers to", refKid)
-
-            // const entity_attrs = refKid?.[":entity/attrs"]?.map(attr =>
-            //   attr
-            //     ?.filter(attr => Array.isArray(attr[":value"]))
-            //     .map(({ ":source": [, source], ":value": value }) => [
-            //       source,
-            //       value[1],
-            //     ])
-            //     // .filter(([source, value]) => source != value)
-            //     .map(([source, value]) => [
-            //       get(source, ":node/title", ":block/string"),
-            //       get(value, ":node/title", ":block/string"),
-            //     ]),
-            // )
-
-            const entity_attrs = refKid?.[":entity/attrs"]?.map(
-              ([page, attr, value]) => {
-                const pageNode = attrToValue(page[":value"], ":node/title", ":block/string")
-                const attrNode = attrToValue(attr[":value"], ":node/title", ":block/string")
-                const valueNode = attrToValue(value[":value"], ":node/title", ":block/string")
-
-                return { pageNode, attrNode, valueNode }
-              },
-            )
-            console.log("and that page has these attributes", entity_attrs)
-          })
+        const attrs = get(uid, ":block/refs")?.[":block/refs"]?.map(attr =>
+          getAttrs(attr),
+        )
+        console.log("with attrs", attrs)
       })
 
       // mutation.removedNodes
@@ -165,16 +141,7 @@ const observer = new MutationObserver((mutationsList, observer) => {
   }
 })
 
-/**
- * @param {string | import("./RoamTypes").RoamAttrItem} attr
- * @param { (keyof import('./RoamTypes').RoamNode)[] } props
- */
-const attrToValue = (attr, ...props) =>
-  Array.isArray(attr) && attr[0] === ":block/uid"
-    ? get(attr[1], ...props)
-    : attr
-
-const roam_onInit = () => {
+export const roam_onInit = () => {
   if (!window.roamAlphaAPI) {
     setTimeout(roam_onInit, 100)
     return
@@ -193,42 +160,29 @@ const roam_onInit = () => {
 
 const vivify = {
   q,
-  q1,
-  pull: PULL_DEPRECATED,
   get,
-  getStuffThatRefsToId,
-  getIdForTitle,
-  getParentId,
-  getIdFromUid,
-  getCurrentPageUid,
-  getCurrentPage,
-  getStuffThatRefsTo,
-  getUrlToUid,
-  forEachThingThatRefsTo,
-  executeEverythingThatRefsTo,
-  executeBlockById,
-  uidFromElement,
   roam_onInit,
 }
 
-export {
-  q,
-  q1,
-  PULL_DEPRECATED as pull,
-  get,
-  getStuffThatRefsToId,
-  getIdForTitle,
-  getParentId,
-  getIdFromUid,
-  getCurrentPageUid,
-  getCurrentPage,
-  getStuffThatRefsTo,
-  getUrlToUid,
-  forEachThingThatRefsTo,
-  executeEverythingThatRefsTo,
-  executeBlockById,
-  uidFromElement,
-  roam_onInit,
-}
+/**
+ * @param {string | number | { ":block/uid"?: string; ":db/id"?: number; } | null | undefined} id
+ * @param { (keyof import('./RoamTypes').RoamNode)[] } props
+ */
+const getAttrs = (id, ...props) => {
+  return get(id, ":entity/attrs")?.[":entity/attrs"]?.reduce((
+    /**@type {any}*/ acc,
+    [page, attr, value],
+  ) => {
+    const key =
+      get(attr[":value"][1], ":node/title", ":block/string")?.[":node/title"] ||
+      "key"
 
-export default vivify
+    const val =
+      typeof value[":value"] === "string"
+        ? value[":value"]
+        : get(value[":value"][1], ...props)
+
+    acc[key] = val
+    return acc
+  }, {})
+}
