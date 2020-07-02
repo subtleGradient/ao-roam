@@ -28,7 +28,7 @@ import("https://cdn.jsdelivr.net/gh/subtleGradient/ao-roam@fc266accb87db20abda8a
 
 ```js
 // ==UserScript==
-// @name         ao/js/roam/onInit
+// @name         vivify/onInit
 // @namespace    https://subtlegradient.com
 // @version      0.2.4
 // @description  init vivify
