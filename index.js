@@ -1,15 +1,20 @@
-import { React, ReactDOM } from "https://unpkg.com/es-react@16"
+import { React, ReactDOM } from "https://jspm.dev/react@17"
 import htm from "https://unpkg.com/htm?module"
+
+console.log('hello')
 
 const html = htm.bind(React.createElement)
 
+/**
+ * @param {{ count: string; }} props
+ */
 const Counter = props => {
   const [count, setCount] = React.useState(parseInt(props.count))
   return html`
     <div>
       <h1>${count}</h1>
-      <button onClick=${e => setCount(count - 1)}>Decrement</button>
-      <button onClick=${e => setCount(count + 1)}>Increment</button>
+      <button onClick=${_e => setCount(count - 1)}>Decrement</button>
+      <button onClick=${_e => setCount(count + 1)}>Increment</button>
     </div>
   `
 }
@@ -192,7 +197,7 @@ const handleNode = (action, node, mutation) => {
   })
 }
 
-const observer = new MutationObserver((mutationsList, observer) => {
+const observer = new MutationObserver((mutationsList, _observer) => {
   for (const mutation of mutationsList) {
     if (mutation.type === "childList") {
       mutation.addedNodes.forEach(node => handleNode("added", node, mutation))

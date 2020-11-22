@@ -3,4 +3,11 @@
 
 Hello whirrled
 
-<script rel="module" src="./index.js"></script>
+<script type="importmap">
+  {
+    "imports": {
+      "tensorflow": "https://jspm.dev/@tensorflow/tfjs@0.10.0"
+    }
+  }
+</script>
+<script type="module" src="./index.js"></script>
