@@ -35,9 +35,9 @@ export const selectTextOf = node => {
   selection.addRange(range)
 }
 
-// javascript:import("http://work-aylott-win.local:5000/bookmarklet-tools.js").then(module=>console.log(module))
-// javascript:void(import("/bookmarklet-tools.js").then(({default:init})=>init()))
+// javascript:import(`https://cdn.jsdelivr.net/gh/subtleGradient/ao-roam@f59459c/roam-bookmarklet-jw.js`).then(({default:init})=>init())
 // javascript:import(`https://8eab5bddf934.ngrok.io/roam-bookmarklet-jw.js?_=${Date.now().toString(36)}`).then(({default:init})=>init())
+
 
 export default function main() {
   // const { href, hostname } = location
