@@ -10,8 +10,8 @@ import {
  * @param {HTMLElement | Document} parent
  * @return {HTMLElement[]}
  */
-// @ts-ignore
 const $$ = (selectors, parent = document) => [
+  // @ts-ignore
   ...parent.querySelectorAll(selectors),
 ]
 
@@ -37,7 +37,6 @@ export const selectTextOf = node => {
 
 // javascript:import(`https://cdn.jsdelivr.net/gh/subtleGradient/ao-roam@f59459c/roam-bookmarklet-jw.js`).then(({default:init})=>init())
 // javascript:import(`https://8eab5bddf934.ngrok.io/roam-bookmarklet-jw.js?_=${Date.now().toString(36)}`).then(({default:init})=>init())
-
 
 export default function main() {
   // const { href, hostname } = location
