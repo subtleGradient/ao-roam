@@ -1,20 +1,33 @@
-// Bookmarklet tools
+import { html, render } from 'https://unpkg.com/htm/preact/index.mjs?module'
+import { useState, useEffect, useRef } from 'https://unpkg.com/preact@latest/hooks/dist/hooks.module.js?module';
 
-// import { $, $$, removeChild } from "./lib/dom.js"
-
-/** @type {Document['querySelector']} */
+/**
+ * @param {string} selectors
+ * @param {HTMLElement | Document} parent
+ * @return {HTMLElement[]}
+ */
 // @ts-ignore
-export const $ = (selectors) => document.querySelector(selectors)
-
-/** @type {Document['querySelectorAll']} */
-// @ts-ignore
-export const $$ = (selectors) => document.querySelectorAll(selectors)
+const $$ = (selectors, parent = document) => [...parent.querySelectorAll(selectors)]
 
 /**
  * @param {Element} node
  */
-export const removeChild = node => node.parentElement?.removeChild(node)
+export const parentRemoveChild = node => node.parentElement?.removeChild(node)
 
+/**
+ * @param {HTMLElement} node
+ */
+export const selectTextOf = (node) => {
+  // Clear any current selection
+  const selection = window.getSelection();
+  if (!selection) return
+  selection.removeAllRanges();
+
+  // Select
+  const range = document.createRange();
+  range.selectNodeContents(node)
+  selection.addRange(range);
+}
 
 // javascript:import("http://work-aylott-win.local:5000/bookmarklet-tools.js").then(module=>console.log(module))
 // javascript:void(import("/bookmarklet-tools.js").then(({default:init})=>init()))
@@ -22,37 +35,40 @@ export const removeChild = node => node.parentElement?.removeChild(node)
 
 
 export default function main() {
-  const { href, hostname } = location
+  // const { href, hostname } = location
 
-  $$('ao-modal-wrapper').forEach(removeChild)
+  $$('ao-modal-wrapper').forEach(parentRemoveChild)
   const modalWrap = document.createElement('ao-modal-wrapper')
-  modalWrap.innerHTML = `
-    <ao-modal 
-      id="ao-modal"
-      contentEditable
-      autoFocus
-      style="
-        padding: 10hv;
-        background: lime;
-        position: fixed;
-        height: 100vh;
-        top:0;right:0;bottom:0;left:0;
-        z-index: 999;
-        overflow-y: auto;
-      ">
-    </ao-modal>
-  `
-  modalWrap.onclick = () => removeChild(modalWrap)
+  modalWrap.onclick = () => parentRemoveChild(modalWrap)
   document.body.appendChild(modalWrap)
-  const modal = /** @type {HTMLElement} */(/** @type {any} */ (modalWrap.firstElementChild ?? modalWrap))
-  setTimeout(() => { modal.focus() }, 0)
-
-  console.log({ href, hostname, modalWrap });
-
-  $$('article').forEach(article => {
-    console.log(article)
-    modal.innerHTML = article.outerHTML
-  })
+  render(html`<${App} document=${document} />`, modalWrap)
 }
 
+/** @param {{ document: Document }} props */
+function App({ document }) {
+  const modal = useRef()
+  useEffect(() => {
+    modal.current.focus()
+  }, [])
+  const articles = $$('article')
+  return html`
+  <div ref=${modal} onFocus=${() => selectTextOf(modal.current)} autoFocus contentEditable
+    style=${{ zIndex: 999, position: 'fixed', top: 0, right: 0, bottom: 0, left: 0 }}>
+    ${articles.map((article, index) => html`
+    <${Thing} key=${index} article=${article} />
+    `)}
+  </div>
+`
+}
 
+/** @param {{ article: HTMLElement }} props */
+function Thing({ article }) {
+  const questions = $$('p.qu', article)
+  return (
+    html`
+    <ul>
+      ${questions.map((q, index) => html`<li key=${index}>${q.textContent}</li>`)}
+    </ul>
+    `
+  )
+}
