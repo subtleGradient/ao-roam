@@ -52,7 +52,7 @@ function App({ document }) {
   }, [])
   const articles = $$('article')
   return html`
-  <div ref=${modal} onFocus=${()=> selectTextOf(modal.current)} autoFocus contentEditable
+  <div ref=${modal} onFocus=${() => selectTextOf(modal.current)} autoFocus contentEditable
     style=${{ zIndex: 999, position: 'fixed', overflowY: 'auto', top: 0, right: 0, bottom: 0, left: 0, background: 'white', padding: '10vw', boxSizing: 'border-box' }}>
     <${Things} things=${articles} Thing=${Article} />
   </div>
@@ -79,7 +79,7 @@ const SpanThing = ({ children }) => html`<p>${clean(children.textContent?.toStri
 
 /** @param {{ children: HTMLElement }} props */
 const Paragraph = ({ children }) => html`<${Things} things=${clean(children.textContent?.toString() ?? children?.toString())?.replace(/\.\s\.\s\.(?!\s\.)/g, '…'
-).replace(/([.?!)]”?)\s(?![()…0-9])|—/g, '$1;;;' ).split(';;;')} />`;
+  ).replace(/([.?!)]”?)\s(?![()…0-9])|—/g, '$1;;;').split(';;;')} />`;
 
 /** @param {{ children: HTMLElement }} props */
 function Section({ children: section }) {
@@ -89,10 +89,18 @@ function Section({ children: section }) {
     html`
     <section>
       <h2>${heading ? clean(heading.textContent) : "INTRO"}</h2>
-      <${Things} things=${questions} Thing=${({ children: q })=> html`
+      <${Things} things=${questions} Thing=${({ children: q }) => html`
         <h3>${clean(q.textContent)}</h3>
         <${Things} things=${$$(`[data-rel-pid="[${q.dataset.pid}]" ]`, section)} Thing=${Paragraph} />
-        <${Things} things=${$$(`figure`, section)} Thing=${({ children: figure })=> {
+    
+        `} />
+    </section>
+    `
+  )
+}
+
+/*
+<${Things} things=${$$(`figure`, section)} Thing=${({ children: figure })=> {
           console.log({ section, figure })
             return (html`
           <div class="Section-figure">
@@ -105,12 +113,7 @@ function Section({ children: section }) {
             </ul>
           </div>
           `);
-            }} />
-          `} />
-    </section>
-    `
-  )
-}
+            }} /> */
 
 /** @param {{ article: HTMLElement }} props */
 function Header({ article }) {
