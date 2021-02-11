@@ -9,7 +9,7 @@ javascript:import("https://cdn.jsdelivr.net/gh/subtleGradient/ao-roam@master/you
 javascript:import(`https://${`9d93fbf8f31e.ngrok.io`}/youtube-dl-transcript-csv.ts.js?_=${Date.now().toString(36)}`).then(({main})=>main())
  */
 /*!
-Copyright 2020 Thomas Aylott <oblivious@subtlegradient.com>
+Copyright 2021 Thomas Aylott <oblivious@subtlegradient.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
