@@ -7,7 +7,7 @@
   "scripts": {
     "serve": "http-server --cors --port 8808",
     "ngrok": "ngrok http 8808",
-    "init-mac": "npm i -g http-server && brew cask install ngrok"
+    "init-mac": "npm i -g http-server && brew install --cask ngrok && open $(dirname `which ngrok`)"
   },
   "dependencies": {
     "serve": "^11.3.2"
