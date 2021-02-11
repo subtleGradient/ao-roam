@@ -3,6 +3,8 @@
  * Download the transcript of the current YouTube video as a CSV file
  *
  * Usage:
+javascript:import("https://cdn.jsdelivr.net/gh/subtleGradient/ao-roam@master/youtube-dl-transcript-csv.ts.js").then(({main})=>main())
+
  * Dev usage:
 javascript:import(`https://${`9d93fbf8f31e.ngrok.io`}/youtube-dl-transcript-csv.ts.js?_=${Date.now().toString(36)}`).then(({main})=>main())
  */
