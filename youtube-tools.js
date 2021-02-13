@@ -25,7 +25,7 @@ const nextFrame = () => new Promise(done => requestAnimationFrame(done))
 /** @return {Promise<import("./YouTube").CueGroup[] | null>} */
 export async function getTranscriptCueGroups(TIMEOUT = 5000) {
   const startTime = Date.now()
-  while (getTranscript() == null) {
+  while (getTranscript().length === 0) {
     clickOpenMenu()
     // await nextFrame()
     await timeout(100)
@@ -37,11 +37,11 @@ export async function getTranscriptCueGroups(TIMEOUT = 5000) {
   }
   return getTranscript()
 }
-/** @return {import("./YouTube").CueGroup[] | null} */
+/** @return {import("./YouTube").CueGroup[]} */
 const getTranscript = () =>
   // @ts-ignore
   $$("ytd-transcript-renderer")[0]?.__data?.data?.body?.transcriptBodyRenderer
-    ?.cueGroups ?? null
+    ?.cueGroups ?? []
 
 const clickOpenTranscript = () =>
   [...$$("ytd-menu-service-item-renderer")]

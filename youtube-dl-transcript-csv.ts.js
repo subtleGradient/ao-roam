@@ -6,7 +6,7 @@
 javascript:import("https://cdn.jsdelivr.net/gh/subtleGradient/ao-roam@master/youtube-dl-transcript-csv.ts.js").then(({main})=>main())
 
  * Dev usage:
-javascript:import(`https://${`9d93fbf8f31e.ngrok.io`}/youtube-dl-transcript-csv.ts.js?_=${Date.now().toString(36)}`).then(({main})=>main())
+javascript:import(`https://${`eaa40dfd6427.ngrok.io`}/youtube-dl-transcript-csv.ts.js?_=${Date.now().toString(36)}`).then(({main})=>main())
  */
 /*!
 Copyright 2021 Thomas Aylott <oblivious@subtlegradient.com>
@@ -24,14 +24,12 @@ import { getCurrentPageUid, getTranscriptCueGroups } from "./youtube-tools.js"
 
 export async function main() {
   try {
+    const id = getCurrentPageUid()
     const cueGroups = await getTranscriptCueGroups()
+    await download(`youtube-${id}-cueGroups.json`, JSON.stringify(cueGroups))
     await download(
-      `youtube-${getCurrentPageUid()}-cueGroups.json`,
-      JSON.stringify(cueGroups),
-    )
-    await download(
-      `youtube-${getCurrentPageUid()}-cueGroups.csv`,
-      stringify([headers(cueGroups), ...getRows(cueGroups)]),
+      `youtube-${id}-cueGroups.csv`,
+      stringify([headers(cueGroups), ...getRows(cueGroups, id)]),
     )
   } catch (e) {
     console.error(e)
@@ -43,30 +41,33 @@ export async function main() {
  * @return {string[]}
  */
 function headers(cueGroups) {
-  return ["formattedStartOffset", "startOffset", "duration", "text", "duration/length"]
+  return [
+    "formattedStartOffset",
+    "startOffset",
+    "duration",
+    "text",
+    "duration/length",
+    "link",
+  ]
 }
 
 /**
  * @param {import("./YouTube").CueGroup[] | null} cueGroups
- * @return {(string|number)[][]}
+ * @param {string} id
+ * @return {(string | number)[][]}
  */
-function getRows(cueGroups) {
+function getRows(cueGroups, id) {
   /** @type {(string | number)[][]} */
   const rows = []
-  cueGroups?.forEach(cg => {
-    if (cg.transcriptCueGroupRenderer.cues.length > 1) {
-      console.warn(
-        "ignoring additional cues",
-        cg.transcriptCueGroupRenderer.cues,
-      )
+  cueGroups?.forEach(({ transcriptCueGroupRenderer: cg }) => {
+    if (cg.cues.length > 1) {
+      console.warn("ignoring additional cues", cg.cues)
     }
     const [formattedStartOffset, startOffset, duration, text] = [
-      cg.transcriptCueGroupRenderer.formattedStartOffset.simpleText,
-      +cg.transcriptCueGroupRenderer.cues[0].transcriptCueRenderer
-        .startOffsetMs,
-      +cg.transcriptCueGroupRenderer.cues[0].transcriptCueRenderer.durationMs,
-      cg.transcriptCueGroupRenderer.cues[0].transcriptCueRenderer.cue
-        .simpleText,
+      cg.formattedStartOffset.simpleText,
+      +cg.cues[0].transcriptCueRenderer.startOffsetMs,
+      +cg.cues[0].transcriptCueRenderer.durationMs,
+      cg.cues[0].transcriptCueRenderer.cue.simpleText,
     ]
     rows.push([
       formattedStartOffset,
@@ -74,6 +75,11 @@ function getRows(cueGroups) {
       duration,
       text,
       Math.round(duration / text?.length || 0),
+      !id
+        ? ""
+        : `https://www.youtube.com/watch?v=${id}&t=${Math.round(
+            startOffset / 1000,
+          )}`,
     ])
   })
   return rows
